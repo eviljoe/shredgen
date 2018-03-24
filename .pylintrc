@@ -59,7 +59,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=missing-docstring,unicode-builtin,backtick,file-builtin,reload-builtin,dict-view-method,reduce-builtin,apply-builtin,map-builtin-not-iterating,long-builtin,delslice-method,execfile-builtin,next-method-called,coerce-method,dict-iter-method,round-builtin,oct-method,no-absolute-import,old-raise-syntax,zip-builtin-not-iterating,old-octal-literal,import-star-module-level,old-division,indexing-exception,coerce-builtin,buffer-builtin,old-ne-operator,range-builtin-not-iterating,unpacking-in-except,print-statement,suppressed-message,parameter-unpacking,intern-builtin,filter-builtin-not-iterating,raw_input-builtin,basestring-builtin,long-suffix,input-builtin,unichr-builtin,useless-suppression,hex-method,metaclass-assignment,raising-string,cmp-builtin,xrange-builtin,nonzero-method,standarderror-builtin,setslice-method,getslice-method,cmp-method,using-cmp-argument
+disable=too-few-public-methods,missing-docstring,unicode-builtin,backtick,file-builtin,reload-builtin,dict-view-method,reduce-builtin,apply-builtin,map-builtin-not-iterating,long-builtin,delslice-method,execfile-builtin,next-method-called,coerce-method,dict-iter-method,round-builtin,oct-method,no-absolute-import,old-raise-syntax,zip-builtin-not-iterating,old-octal-literal,import-star-module-level,old-division,indexing-exception,coerce-builtin,buffer-builtin,old-ne-operator,range-builtin-not-iterating,unpacking-in-except,print-statement,suppressed-message,parameter-unpacking,intern-builtin,filter-builtin-not-iterating,raw_input-builtin,basestring-builtin,long-suffix,input-builtin,unichr-builtin,useless-suppression,hex-method,metaclass-assignment,raising-string,cmp-builtin,xrange-builtin,nonzero-method,standarderror-builtin,setslice-method,getslice-method,cmp-method,using-cmp-argument
 
 
 [REPORTS]
@@ -92,7 +92,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 [FORMAT]
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=120
 
 # Regexp for a line that is allowed to be longer than the limit.
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$
