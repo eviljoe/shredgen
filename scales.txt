@@ -2,9 +2,9 @@ A  Major Pentatonic - e5,  e6,  e8,  B5,  B6,  B8,  G5,  G7,  D5,  D7,  D8,  A5,
 A# Major Pentatonic - e6,  e7,  e9,  B6,  B7,  B9,  G6,  G8,  D6,  D8,  D9,  A6,  A8,  A9,  E6,  E7,  E9
 B  Major Pentatonic - e7,  e8,  e10, B7,  B8,  B10, G7,  G9,  D7,  D9,  D10, A7,  A9,  A10, E7,  E8,  E10
 C  Major Pentatonic - e8,  e9,  e11, B8,  B9,  B11, G8,  G10, D8,  D10, D11, A8,  A10, A11, E8,  E9,  E11
-C# Major Pentatonic - e9,  e10, e0,  B9,  B10, B0,  G9,  G11, D9,  D11, D0,  A9,  A11, A0,  E9,  E10, E0
-D  Major Pentatonic - e10, e11, e1,  B10, B11, B1,  G10, G0,  D10, D0,  D1,  A10, A0,  A1,  E10, E11, E1
-D# Major Pentatonic - e11, e0,  e2,  B11, B0,  B2,  G11, G1,  D11, D1,  D2,  A11, A1,  A2,  E11, E0,  E2
+C# Major Pentatonic - e9,  e10, e0,  B9,  B10, B0,  G9,  G11, D9,  D11, D12, A9,  A11, A0,  E9,  E10, E0
+D  Major Pentatonic - e10, e11, e1,  B10, B11, B1,  G10, G0,  D10, D12, D13, A10, A0,  A1,  E10, E11, E1
+D# Major Pentatonic - e11, e0,  e2,  B11, B0,  B2,  G11, G1,  D11, D13, D14, A11, A1,  A2,  E11, E0,  E2
 E  Major Pentatonic - e0,  e1,  e3,  B0,  B1,  B3,  G0,  G2,  D0,  D2,  D3,  A0,  A2,  A3,  E0,  E1,  E3
 F  Major Pentatonic - e1,  e2,  e4,  B1,  B2,  B4,  G1,  G3,  D1,  D3,  D4,  A1,  A3,  A4,  E1,  E2,  E4
 F# Major Pentatonic - e2,  e3,  e5,  B2,  B3,  B5,  G2,  G4,  D2,  D4,  D5,  A2,  A4,  A5,  E2,  E3,  E5

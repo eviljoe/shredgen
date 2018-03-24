@@ -17,9 +17,9 @@ def main():
     as_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 1, 'A#')
     b_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 2, 'B')
     c_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 3, 'C')
-    cs_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 4, 'C#')
-    d_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 5, 'D')
-    ds_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 6, 'D#')
+    cs_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 4, 'C#', dont_wrap=['D'])
+    d_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 5, 'D', dont_wrap=['D'])
+    ds_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 6, 'D#', dont_wrap=['D'])
     e_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 7, 'E')
     f_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 8, 'F')
     fs_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 9, 'F#')
@@ -48,8 +48,15 @@ class Note:
     def __str__(self):
         return self.string + str(self.fret)
 
-    def offset(self, offset):
-        return Note(self.string, (self.fret + offset) % _NOTES_IN_OCTAVE)
+    def offset(self, offset, dont_wrap=None):
+        if dont_wrap is None:
+            dont_wrap = set()
+
+        offset_fret = self.fret + offset
+        if self.string not in dont_wrap:
+            offset_fret %= _NOTES_IN_OCTAVE
+
+        return Note(self.string, offset_fret)
 
 
 class Scale:
@@ -67,8 +74,8 @@ class MajorPentatonicScale(Scale):
         super().__init__('{} Major Pentatonic'.format(key), MajorPentatonicScale._get_aliases(key), notes)
 
     @staticmethod
-    def from_other(other, offset, key):
-        return MajorPentatonicScale(key, [n.offset(offset) for n in other.notes])
+    def from_other(other, offset, key, dont_wrap=None):
+        return MajorPentatonicScale(key, [n.offset(offset, dont_wrap) for n in other.notes])
 
     @staticmethod
     def _get_aliases(key):
