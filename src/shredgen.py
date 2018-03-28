@@ -5,39 +5,35 @@ _NOTES_IN_OCTAVE = 12
 
 
 def main():
+    for scale in _create_major_pentatonic_scales():
+        atab = ASCIITab(scale.notes)
+        print('{}\n{}\n\n'.format(scale.name, atab), end='')
+
+
+def _create_major_pentatonic_scales():
     a_maj_pen = MajorPentatonicScale('A', [
-        Note('e', 5), Note('e', 6), Note('e', 8),
-        Note('B', 5), Note('B', 6), Note('B', 8),
-        Note('G', 5), Note('G', 7),
-        Note('D', 5), Note('D', 7), Note('D', 8),
-        Note('A', 5), Note('A', 7), Note('A', 8),
         Note('E', 5), Note('E', 6), Note('E', 8),
+        Note('A', 5), Note('A', 7), Note('A', 8),
+        Note('D', 5), Note('D', 7), Note('D', 8),
+        Note('G', 5), Note('G', 7),
+        Note('B', 5), Note('B', 6), Note('B', 8),
+        Note('e', 5), Note('e', 6), Note('e', 8),
     ])
 
-    as_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 1, 'A#')
-    b_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 2, 'B')
-    c_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 3, 'C')
-    cs_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 4, 'C#', dont_wrap=['D'])
-    d_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 5, 'D', dont_wrap=['D'])
-    ds_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 6, 'D#', dont_wrap=['D'])
-    e_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 7, 'E')
-    f_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 8, 'F')
-    fs_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 9, 'F#')
-    g_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 10, 'G')
-    gs_maj_pen = MajorPentatonicScale.from_other(a_maj_pen, 11, 'G#')
+    scales = [a_maj_pen]
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 1, 'A#'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 2, 'B'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 3, 'C'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 4, 'C#', wrap=False))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 5, 'D', wrap=False))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 6, 'D#', wrap=False))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 7, 'E'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 8, 'F'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 9, 'F#'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 10, 'G'))
+    scales.append(MajorPentatonicScale.from_other(a_maj_pen, 11, 'G#'))
 
-    print(a_maj_pen)
-    print(as_maj_pen)
-    print(b_maj_pen)
-    print(c_maj_pen)
-    print(cs_maj_pen)
-    print(d_maj_pen)
-    print(ds_maj_pen)
-    print(e_maj_pen)
-    print(f_maj_pen)
-    print(fs_maj_pen)
-    print(g_maj_pen)
-    print(gs_maj_pen)
+    return scales
 
 
 class Note:
@@ -48,12 +44,10 @@ class Note:
     def __str__(self):
         return self.string + str(self.fret)
 
-    def offset(self, offset, dont_wrap=None):
-        if dont_wrap is None:
-            dont_wrap = set()
-
+    def offset(self, offset, wrap=True):
         offset_fret = self.fret + offset
-        if self.string not in dont_wrap:
+
+        if wrap:
             offset_fret %= _NOTES_IN_OCTAVE
 
         return Note(self.string, offset_fret)
@@ -71,20 +65,42 @@ class Scale:
 
 class MajorPentatonicScale(Scale):
     def __init__(self, key, notes):
-        super().__init__('{} Major Pentatonic'.format(key), MajorPentatonicScale._get_aliases(key), notes)
+        super().__init__('{} Major Pentatonic'.format(key), self._get_aliases_for_key(key), notes)
 
     @staticmethod
-    def from_other(other, offset, key, dont_wrap=None):
-        return MajorPentatonicScale(key, [n.offset(offset, dont_wrap) for n in other.notes])
+    def from_other(other, offset, key, wrap=True):
+        return MajorPentatonicScale(key, [n.offset(offset, wrap) for n in other.notes])
 
     @staticmethod
-    def _get_aliases(key):
+    def _get_aliases_for_key(key):
         return [
             '{} Major Pentatonic'.format(key),
             '{}MajorPentatonic'.format(key),
             '{} Maj Pen'.format(key),
             '{}MajPen'.format(key),
         ]
+
+
+class ASCIITab:
+    def __init__(self, notes):
+        self.notes = notes
+        self._strings = ['e', 'B', 'G', 'D', 'A', 'E']
+
+    def __str__(self):
+        string_lines = dict()
+        for string in self._strings:
+            string_lines[string] = []
+
+        for note in self.notes:
+            for string, line in string_lines.items():
+                placeholder = '-' if note.fret < 10 else '--'
+                line.append(str(note.fret) if string == note.string else placeholder)
+
+        return '\n'.join([self._format_string_line(string, string_lines) for string in self._strings])
+
+    @staticmethod
+    def _format_string_line(string, string_lines):
+        return '{}|-{}-'.format(string, '--'.join(string_lines.get(string)))
 
 
 if __name__ == '__main__':
