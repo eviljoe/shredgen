@@ -16,8 +16,15 @@ _ERR_LENGTH_TOO_LOW = 5
 
 
 def main():
-    opts = _parse_opts()
-    err = _perform_user_action(opts)
+    err = None
+
+    try:
+        opts = _parse_opts()
+        _perform_user_action(opts)
+    except ExitCodeError as e:
+        err = e.err_code
+        _print_err_and_usage(e)
+
     sys.exit(0 if err is None else err)
 
 
@@ -43,16 +50,12 @@ def _parse_opts():
 
 
 def _perform_user_action(opts):
-    err = None
-
     if opts.all_scales:
         _display_all_scales()
     elif opts.all_scale_names:
         _display_all_scale_names()
     else:
-        err = _shred(opts)
-
-    return err
+        _shred(opts)
 
 
 def _display_all_scales():
@@ -64,67 +67,42 @@ def _display_all_scale_names():
 
 
 def _shred(opts):
-    err = None
     scale_name = opts.scale.strip().lower() if opts.scale else ''
-    scale = None
-    length = None
+    _validate_scale_name(scale_name)
 
-    err = _validate_scale_name(scale_name)
+    scale = _get_scale_by_name(scale_name)
+    _validate_scale(opts, scale)
 
-    if err is None:
-        scale = _get_scale_by_name(scale_name)
-        err = _validate_scale(opts, scale)
+    length_str = str(opts.length).strip()
+    _validate_length(length_str)
+    length = int(length_str)
 
-    if err is None:
-        length_str = str(opts.length).strip()
-        err = _validate_length(length_str)
-        length = int(length_str) if err is None else None
-
-    if err is None:
-        _shred_in_scale(scale, length)
-
-    return err
+    _shred_in_scale(scale, length)
 
 
 def _validate_scale_name(scale_name):
-    err = None
-
     if len(scale_name) == 0:
-        err = _ERR_NO_SCALE_SPECIFIED
-        _print_err_and_usage('A scale must be specified.')
-
-    return err
+        raise ExitCodeError('A scale must be specified.', _ERR_NO_SCALE_SPECIFIED)
 
 
 def _validate_scale(opts, scale):
-    err = None
-
     if not scale:
-        err = _ERR_UNKNOWN_SCALE
         basename = _basename()
-        _print_err_and_usage(
+        raise ExitCodeError(
             'Unknown scale: {}\n'
             'To see all supported scale names, execute: {} --all-scale-names\n'
-            'To see all supported scales, execute: {} --all-scales'.format(
-                opts.scale, basename, basename))
-
-    return err
+            'To see all supported scales, execute: {} --all-scales'.format(opts.scale, basename, basename),
+            _ERR_UNKNOWN_SCALE)
 
 
 def _validate_length(length):
-    err = None
-
     try:
         length = int(length, 10)
-    except ValueError:
-        err = _ERR_LENGTH_NOT_INT
-        _print_err_and_usage('Length must be an integer.')
+    except ValueError as e:
+        raise ExitCodeError('Length must be an integer.', _ERR_LENGTH_NOT_INT) from e
 
-    if err is None and length < 1:
-        err = _ERR_LENGTH_TOO_LOW
-        _print_err_and_usage('Length must be greater than zero')
-
-    return err
+    if length < 1:
+        raise ExitCodeError('Length must be greater than zero', _ERR_LENGTH_TOO_LOW)
 
 
 def _shred_in_scale(scale, length):
@@ -240,6 +218,12 @@ class ASCIITab:
     @staticmethod
     def _format_string_line(string, string_lines):
         return '{}|-{}-'.format(string, '--'.join(string_lines.get(string)))
+
+
+class ExitCodeError(Exception):
+    def __init__(self, message, err_code):
+        super(ExitCodeError, self).__init__(message)
+        self.err_code = err_code
 
 
 if __name__ == '__main__':
