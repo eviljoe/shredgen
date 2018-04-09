@@ -3,12 +3,16 @@
 
 import argparse
 import sys
+import os.path
 
 
 _NOTES_IN_OCTAVE = 12
+_DEFAULT_LENGTH = 12
 
 _ERR_NO_SCALE_SPECIFIED = 2
 _ERR_UNKNOWN_SCALE = 3
+_ERR_LENGTH_NOT_INT = 4
+_ERR_LENGTH_TOO_LOW = 5
 
 
 def main():
@@ -29,10 +33,13 @@ def _parse_opts():
                         help='Display all possible scales')
     parser.add_argument('--all-scale-names', action='store_true', default=False, dest='all_scale_names',
                         help='Display all possible scale names')
+    parser.add_argument('--length', '-l', default=_DEFAULT_LENGTH, dest='length',
+                        help='Number of notes to generate (default: %(default)s)')
 
-    # TODO add --length option to specify how many notes generate when shredding
+    opts = parser.parse_args()
+    opts.length = _DEFAULT_LENGTH if opts.length is None else opts.length
 
-    return parser.parse_args()
+    return opts
 
 
 def _perform_user_action(opts):
@@ -60,25 +67,67 @@ def _shred(opts):
     err = None
     scale_name = opts.scale.strip().lower() if opts.scale else ''
     scale = None
+    length = None
 
-    if len(scale_name) == 0:
-        err = _ERR_NO_SCALE_SPECIFIED
-        # TODO todo print err msg
+    err = _validate_scale_name(scale_name)
 
     if err is None:
         scale = _get_scale_by_name(scale_name)
-
-        if not scale:
-            err = _ERR_UNKNOWN_SCALE
-            # TODO todo print err msg
+        err = _validate_scale(opts, scale)
 
     if err is None:
-        _shred_in_scale(scale)
+        length_str = str(opts.length).strip()
+        err = _validate_length(length_str)
+        length = int(length_str) if err is None else None
+
+    if err is None:
+        _shred_in_scale(scale, length)
 
     return err
 
 
-def _shred_in_scale(scale):
+def _validate_scale_name(scale_name):
+    err = None
+
+    if len(scale_name) == 0:
+        err = _ERR_NO_SCALE_SPECIFIED
+        _print_err_and_usage('A scale must be specified.')
+
+    return err
+
+
+def _validate_scale(opts, scale):
+    err = None
+
+    if not scale:
+        err = _ERR_UNKNOWN_SCALE
+        basename = _basename()
+        _print_err_and_usage(
+            'Unknown scale: {}\n'
+            'To see all supported scale names, execute: {} --all-scale-names\n'
+            'To see all supported scales, execute: {} --all-scales'.format(
+                opts.scale, basename, basename))
+
+    return err
+
+
+def _validate_length(length):
+    err = None
+
+    try:
+        length = int(length, 10)
+    except ValueError:
+        err = _ERR_LENGTH_NOT_INT
+        _print_err_and_usage('Length must be an integer.')
+
+    if err is None and length < 1:
+        err = _ERR_LENGTH_TOO_LOW
+        _print_err_and_usage('Length must be greater than zero')
+
+    return err
+
+
+def _shred_in_scale(scale, length):
     # TODO todo shred in scale
     print('TODO: shred in this scale...')
     print(str(ASCIITab(scale.notes)))
@@ -116,6 +165,14 @@ def _get_major_pentatonic_scales():
         MajorPentatonicScale.from_other(a_maj_pen, 10, 'G'),
         MajorPentatonicScale.from_other(a_maj_pen, 11, 'G#'),
     ]
+
+
+def _basename():
+    return os.path.basename(sys.argv[0])
+
+
+def _print_err_and_usage(err):
+    print('{}\nFor usage, execute: {} -h'.format(err, _basename()), file=sys.stderr)
 
 
 class Note:
