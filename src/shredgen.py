@@ -2,12 +2,13 @@
 
 
 import argparse
-import sys
 import os.path
+import random
+import sys
 
 
 _NOTES_IN_OCTAVE = 12
-_DEFAULT_LENGTH = 12
+_DEFAULT_LENGTH = 16
 
 _ERR_NO_SCALE_SPECIFIED = 2
 _ERR_UNKNOWN_SCALE = 3
@@ -106,9 +107,8 @@ def _validate_length(length):
 
 
 def _shred_in_scale(scale, length):
-    # TODO todo shred in scale
-    print('TODO: shred in this scale...')
-    print(str(ASCIITab(scale.notes)))
+    scale_notes_len = len(scale.notes)
+    print(ASCIITab(scale.notes[random.randrange(scale_notes_len)] for _ in range(length)))
 
 
 def _get_scale_by_name(name):
