@@ -9,11 +9,29 @@ import sys
 
 _NOTES_IN_OCTAVE = 12
 _DEFAULT_LENGTH = 16
+_DEFAULT_TUNING = 'A'
+
+_KEYS = [
+    ['A'],
+    ['A#', 'Bb'],
+    ['B'],
+    ['C'],
+    ['C#', 'Db'],
+    ['D'],
+    ['D#', 'Eb'],
+    ['E'],
+    ['F'],
+    ['F#', 'Gb'],
+    ['G'],
+    ['G#', 'Ab']
+]
 
 _ERR_NO_SCALE_SPECIFIED = 2
 _ERR_UNKNOWN_SCALE = 3
 _ERR_LENGTH_NOT_INT = 4
 _ERR_LENGTH_TOO_LOW = 5
+_ERR_INVALID_KEY = 6
+_ERR_CANT_FIND_SCALES_OF_TYPE = 7
 
 
 def main():
@@ -43,6 +61,11 @@ def _parse_opts():
                         help='Display all possible scale names')
     parser.add_argument('--length', '-l', default=_DEFAULT_LENGTH, dest='length',
                         help='Number of notes to generate (default: %(default)s)')
+    parser.add_argument('--only-tune', action='store_true', default=False, dest='only_tune',
+                        help='Do not shred.  Instead, show the scale that will be used based on the requested scale '
+                             'and tuning (default: %(default)s).')
+    parser.add_argument('--tuning', '-t', default=_DEFAULT_TUNING, dest='tuning',
+                        help='Guitar tuning key (default: %(default)s)')
 
     opts = parser.parse_args()
     opts.length = _DEFAULT_LENGTH if opts.length is None else opts.length
@@ -55,6 +78,8 @@ def _perform_user_action(opts):
         _display_all_scales()
     elif opts.all_scale_names:
         _display_all_scale_names()
+    elif opts.only_tune:
+        _display_tuning(opts)
     else:
         _shred(opts)
 
@@ -65,6 +90,22 @@ def _display_all_scales():
 
 def _display_all_scale_names():
     print('\n'.join(['{} ({})'.format(scale.name, ', '.join(scale.aliases)) for scale in _get_all_scales()]))
+
+
+def _display_tuning(opts):
+    scale_name = opts.scale.strip().lower() if opts.scale else ''
+    _validate_scale_name(scale_name)
+
+    scale = _get_scale_by_name(scale_name)
+    _validate_scale(opts, scale)
+
+    tuned_scale = _get_tuned_scale(scale, opts.tuning)
+
+    print('Original Scale: {}\n{}\n\nTuned Scale: {}\n{}'.format(
+        scale.name,
+        ASCIITab(scale.notes),
+        tuned_scale.name,
+        ASCIITab(tuned_scale.notes)))
 
 
 def _shred(opts):
@@ -115,6 +156,35 @@ def _get_scale_by_name(name):
     return next((scale for scale in _get_all_scales() if name in [alias.lower() for alias in scale.aliases]), None)
 
 
+def _get_tuned_scale(scale, tuning_key):
+    offset = _get_key_offset('A', tuning_key)
+    adjusted_scale = scale
+
+    if offset != 0:
+        all_scales = _get_all_scales_of_type(scale)
+
+        try:
+            starting_index = all_scales.index(scale)
+        except ValueError as e:
+            raise ExitCodeError(
+                'Could not find other scales of same type as this:\n{}'.format(scale),
+                _ERR_CANT_FIND_SCALES_OF_TYPE
+            ) from e
+
+        adjusted_scale = all_scales[(starting_index + offset) % _NOTES_IN_OCTAVE]
+
+    return adjusted_scale
+
+
+def _get_all_scales_of_type(scale):
+    all_scales = None
+
+    if isinstance(scale, MajorPentatonicScale):
+        all_scales = _get_major_pentatonic_scales()
+
+    return all_scales
+
+
 def _get_all_scales():
     return _get_major_pentatonic_scales()
 
@@ -145,6 +215,24 @@ def _get_major_pentatonic_scales():
     ]
 
 
+def _get_key_offset(key1, key2):
+    return _get_key_num(key2) - _get_key_num(key1)
+
+
+def _get_key_num(key):
+    ckey = str(key).capitalize()
+    key_num = next((i for i, names in enumerate(_KEYS) if ckey in names), None)
+
+    if key_num is None:
+        raise ExitCodeError(
+            'Invalid key: {}\nKey must be one of: {}'.format(
+                key,
+                ', '.join([k for keys in _KEYS for k in keys])
+            ), _ERR_INVALID_KEY)
+
+    return key_num
+
+
 def _basename():
     return os.path.basename(sys.argv[0])
 
@@ -157,6 +245,19 @@ class Note:
     def __init__(self, string, fret):
         self.string = string
         self.fret = fret
+
+    def __eq__(self, other):
+        return (
+            Note == other.__class__
+            and self.string == other.string
+            and self.fret == other.fret
+        )
+
+    def __hash__(self):
+        return (
+            hash(self.string)
+            ^ hash(self.fret)
+        )
 
     def __str__(self):
         return self.string + str(self.fret)
@@ -171,8 +272,9 @@ class Note:
 
 
 class Scale:
-    def __init__(self, name, aliases, notes):
+    def __init__(self, name, key, aliases, notes):
         self.name = name
+        self.key = key
         self.aliases = aliases
         self.notes = notes
 
@@ -182,7 +284,19 @@ class Scale:
 
 class MajorPentatonicScale(Scale):
     def __init__(self, key, notes):
-        super().__init__('{} Major Pentatonic'.format(key), self._get_aliases_for_key(key), notes)
+        super().__init__(
+            name='{} Major Pentatonic'.format(key),
+            key=key,
+            aliases=self._get_aliases_for_key(key),
+            notes=notes
+        )
+
+    def __eq__(self, other):
+        return (
+            MajorPentatonicScale == other.__class__
+            and self.name == other.name
+            and set(self.notes) == set(other.notes)
+        )
 
     @staticmethod
     def from_other(other, offset, key, wrap=True):
@@ -222,7 +336,7 @@ class ASCIITab:
 
 class ExitCodeError(Exception):
     def __init__(self, message, err_code):
-        super(ExitCodeError, self).__init__(message)
+        super().__init__(message)
         self.err_code = err_code
 
 
