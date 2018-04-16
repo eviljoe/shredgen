@@ -34,7 +34,7 @@ _ERR_INVALID_KEY = 6
 _ERR_CANT_FIND_SCALES_OF_TYPE = 7
 
 
-def main():
+def main():  # TODO unit test
     err = None
 
     try:
@@ -47,7 +47,7 @@ def main():
     sys.exit(0 if err is None else err)
 
 
-def _parse_opts():
+def _parse_opts():  # TODO unit test
     parser = argparse.ArgumentParser(description='Generate boring rifts that solidify faces')
 
     # Positional Arguments
@@ -73,7 +73,7 @@ def _parse_opts():
     return opts
 
 
-def _perform_user_action(opts):
+def _perform_user_action(opts):  # TODO unit test
     if opts.all_scales:
         _display_all_scales()
     elif opts.all_scale_names:
@@ -88,11 +88,11 @@ def _display_all_scales():
     print('\n\n'.join(['{}\n{}'.format(scale.name, ASCIITab(scale.notes)) for scale in _get_all_scales()]))
 
 
-def _display_all_scale_names():
+def _display_all_scale_names():  # TODO unit test
     print('\n'.join(['{} ({})'.format(scale.name, ', '.join(scale.aliases)) for scale in _get_all_scales()]))
 
 
-def _display_tuning(opts):
+def _display_tuning(opts):  # TODO unit test
     scale_name = opts.scale.strip().lower() if opts.scale else ''
     _validate_scale_name(scale_name)
 
@@ -108,7 +108,7 @@ def _display_tuning(opts):
         ASCIITab(tuned_scale.notes)))
 
 
-def _shred(opts):
+def _shred(opts):  # TODO unit test
     scale_name = opts.scale.strip().lower() if opts.scale else ''
     _validate_scale_name(scale_name)
 
@@ -122,12 +122,12 @@ def _shred(opts):
     _shred_in_scale(scale, length)
 
 
-def _validate_scale_name(scale_name):
-    if len(scale_name) == 0:
+def _validate_scale_name(scale_name):  # TODO unit test
+    if not scale_name:
         raise ExitCodeError('A scale must be specified.', _ERR_NO_SCALE_SPECIFIED)
 
 
-def _validate_scale(opts, scale):
+def _validate_scale(opts, scale):  # TODO unit test
     if not scale:
         basename = _basename()
         raise ExitCodeError(
@@ -137,7 +137,7 @@ def _validate_scale(opts, scale):
             _ERR_UNKNOWN_SCALE)
 
 
-def _validate_length(length):
+def _validate_length(length):  # TODO unit test
     try:
         length = int(length, 10)
     except ValueError as e:
@@ -147,16 +147,16 @@ def _validate_length(length):
         raise ExitCodeError('Length must be greater than zero', _ERR_LENGTH_TOO_LOW)
 
 
-def _shred_in_scale(scale, length):
+def _shred_in_scale(scale, length):  # TODO unit test
     scale_notes_len = len(scale.notes)
     print(ASCIITab(scale.notes[random.randrange(scale_notes_len)] for _ in range(length)))
 
 
-def _get_scale_by_name(name):
+def _get_scale_by_name(name):  # TODO unit test
     return next((scale for scale in _get_all_scales() if name in [alias.lower() for alias in scale.aliases]), None)
 
 
-def _get_tuned_scale(scale, tuning_key):
+def _get_tuned_scale(scale, tuning_key):  # TODO unit test
     offset = _get_key_offset('A', tuning_key)
     adjusted_scale = scale
 
