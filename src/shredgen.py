@@ -122,12 +122,12 @@ def _shred(opts):  # TODO unit test
     _shred_in_scale(scale, length)
 
 
-def _validate_scale_name(scale_name):  # TODO unit test
+def _validate_scale_name(scale_name):
     if not scale_name:
         raise ExitCodeError('A scale must be specified.', _ERR_NO_SCALE_SPECIFIED)
 
 
-def _validate_scale(opts, scale):  # TODO unit test
+def _validate_scale(opts, scale):
     if not scale:
         basename = _basename()
         raise ExitCodeError(
@@ -137,7 +137,7 @@ def _validate_scale(opts, scale):  # TODO unit test
             _ERR_UNKNOWN_SCALE)
 
 
-def _validate_length(length):  # TODO unit test
+def _validate_length(length):
     try:
         length = int(length, 10)
     except ValueError as e:
@@ -147,21 +147,22 @@ def _validate_length(length):  # TODO unit test
         raise ExitCodeError('Length must be greater than zero', _ERR_LENGTH_TOO_LOW)
 
 
-def _shred_in_scale(scale, length):  # TODO unit test
+def _shred_in_scale(scale, length):
     scale_notes_len = len(scale.notes)
-    print(ASCIITab(scale.notes[random.randrange(scale_notes_len)] for _ in range(length)))
+    print(ASCIITab([scale.notes[random.randrange(scale_notes_len)] for _ in range(length)]))
 
 
-def _get_scale_by_name(name):  # TODO unit test
+def _get_scale_by_name(name):
+    name = name.lower()
     return next((scale for scale in _get_all_scales() if name in [alias.lower() for alias in scale.aliases]), None)
 
 
-def _get_tuned_scale(scale, tuning_key):  # TODO unit test
+def _get_tuned_scale(scale, tuning_key):
     offset = _get_key_offset('A', tuning_key)
     adjusted_scale = scale
 
     if offset != 0:
-        all_scales = _get_all_scales_of_type(scale)
+        all_scales = _get_all_scales_of_type(scale) or []
 
         try:
             starting_index = all_scales.index(scale)
@@ -171,7 +172,7 @@ def _get_tuned_scale(scale, tuning_key):  # TODO unit test
                 _ERR_CANT_FIND_SCALES_OF_TYPE
             ) from e
 
-        adjusted_scale = all_scales[(starting_index + offset) % _NOTES_IN_OCTAVE]
+        adjusted_scale = all_scales[(starting_index + offset) % len(all_scales)]
 
     return adjusted_scale
 
@@ -241,7 +242,7 @@ def _print_err_and_usage(err):
     print('{}\nFor usage, execute: {} -h'.format(err, _basename()), file=sys.stderr)
 
 
-class Note:
+class Note:  # TODO unit test
     def __init__(self, string, fret):
         self.string = string
         self.fret = fret
@@ -271,7 +272,7 @@ class Note:
         return Note(self.string, offset_fret)
 
 
-class Scale:
+class Scale:  # TODO unit test
     def __init__(self, name, key, aliases, notes):
         self.name = name
         self.key = key
@@ -282,7 +283,7 @@ class Scale:
         return '{} {{{}}}'.format(self.name, ', '.join(str(n) for n in self.notes))
 
 
-class MajorPentatonicScale(Scale):
+class MajorPentatonicScale(Scale):  # TODO unit test
     def __init__(self, key, notes):
         super().__init__(
             name='{} Major Pentatonic'.format(key),
@@ -312,7 +313,7 @@ class MajorPentatonicScale(Scale):
         ]
 
 
-class ASCIITab:
+class ASCIITab:  # TODO unit test
     def __init__(self, notes):
         self.notes = notes
         self._strings = ['e', 'B', 'G', 'D', 'A', 'E']
