@@ -34,11 +34,12 @@ _ERR_INVALID_KEY = 6
 _ERR_CANT_FIND_SCALES_OF_TYPE = 7
 
 
-def main():  # TODO unit test
+def main():
     err = None
 
     try:
         opts = _parse_opts()
+        _update_default_opts(opts)
         _perform_user_action(opts)
     except ExitCodeError as e:
         err = e.err_code
@@ -47,7 +48,7 @@ def main():  # TODO unit test
     sys.exit(0 if err is None else err)
 
 
-def _parse_opts():  # TODO unit test
+def _parse_opts():
     parser = argparse.ArgumentParser(description='Generate boring rifts that solidify faces')
 
     # Positional Arguments
@@ -67,13 +68,14 @@ def _parse_opts():  # TODO unit test
     parser.add_argument('--tuning', '-t', default=_DEFAULT_TUNING, dest='tuning',
                         help='Guitar tuning key (default: %(default)s)')
 
-    opts = parser.parse_args()
+    return parser.parse_args()
+
+
+def _update_default_opts(opts):
     opts.length = _DEFAULT_LENGTH if opts.length is None else opts.length
 
-    return opts
 
-
-def _perform_user_action(opts):  # TODO unit test
+def _perform_user_action(opts):
     if opts.all_scales:
         _display_all_scales()
     elif opts.all_scale_names:
@@ -88,11 +90,11 @@ def _display_all_scales():
     print('\n\n'.join(['{}\n{}'.format(scale.name, ASCIITab(scale.notes)) for scale in _get_all_scales()]))
 
 
-def _display_all_scale_names():  # TODO unit test
+def _display_all_scale_names():
     print('\n'.join(['{} ({})'.format(scale.name, ', '.join(scale.aliases)) for scale in _get_all_scales()]))
 
 
-def _display_tuning(opts):  # TODO unit test
+def _display_tuning(opts):
     scale_name = opts.scale.strip().lower() if opts.scale else ''
     _validate_scale_name(scale_name)
 
@@ -108,7 +110,7 @@ def _display_tuning(opts):  # TODO unit test
         ASCIITab(tuned_scale.notes)))
 
 
-def _shred(opts):  # TODO unit test
+def _shred(opts):
     scale_name = opts.scale.strip().lower() if opts.scale else ''
     _validate_scale_name(scale_name)
 
