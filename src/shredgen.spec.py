@@ -9,10 +9,10 @@ import sys
 
 from expects import be, be_empty, be_none, expect, equal, raise_error
 from mamba import after, before, description, it
-from mockito import arg_that, mock, unstub, when, verify
+from mockito import mock, unstub, when, verify
+from mockito.matchers import arg_that
 
 import shredgen
-
 
 with description(shredgen) as self:
     with after.each:
@@ -92,6 +92,7 @@ with description(shredgen) as self:
                 'only_tune': only_tune
             })
 
+
         with before.each:
             when(shredgen)._display_all_scales(...)
             when(shredgen)._display_all_scale_names(...)
@@ -119,6 +120,7 @@ with description(shredgen) as self:
     with description(shredgen._display_all_scales):
         def scale(_self, name, notes):
             return mock({'name': name, 'notes': notes}, spec=shredgen.Scale)
+
 
         with before.each:
             scale_a = self.scale('Scale A', ['a', 'aa', 'aaa'])
@@ -148,8 +150,9 @@ with description(shredgen) as self:
             )
 
     with description(shredgen._display_tuning):
-        def scale(_self, name, notes): # pylint: disable=function-redefined
+        def scale(_self, name, notes):  # pylint: disable=function-redefined
             return mock({'name': name, 'notes': notes}, spec=shredgen.Scale)
+
 
         with before.each:
             self.opts = mock({'scale': ' \t\r\nFoO\n\r\t ', 'tuning': 'T'})
@@ -195,8 +198,9 @@ with description(shredgen) as self:
             )
 
     with description(shredgen._display_all_scale_names):
-        def scale(_self, name, aliases): # pylint: disable=function-redefined
+        def scale(_self, name, aliases):  # pylint: disable=function-redefined
             return mock({'name': name, 'aliases': aliases}, spec=shredgen.Scale)
+
 
         with before.each:
             scale_a = self.scale('Scale A', ['a', 'aa', 'aaa'])
@@ -340,7 +344,8 @@ with description(shredgen) as self:
             when(shredgen)._get_key_offset(...).thenReturn(3)
             expect(shredgen._get_tuned_scale(self.scales[1], 'C')).to(equal(self.scales[4]))
 
-        with it('returns the scale at the wrapped offset if the offset index is greater than the number of notes in an octive'):
+        with it('returns the scale at the wrapped offset if the offset index is greater than the number of notes in an '
+                'octave'):
             when(shredgen)._get_key_offset(...).thenReturn(len(self.scales) + 1)
             expect(shredgen._get_tuned_scale(self.scales[1], 'C')).to(equal(self.scales[2]))
 
@@ -430,10 +435,159 @@ with description(shredgen) as self:
         with it('throws an exception when then given key is None'):
             expect(lambda: shredgen._get_key_num(None)).to(raise_error(shredgen.ExitCodeError))
 
-
     with description(shredgen._basename):
         with before.each:
             when(os.path).basename(...).thenReturn('basename')
 
         with it('returns the the basename'):
             expect(shredgen._basename()).to(equal('basename'))
+
+    with description(shredgen.Note):
+        with description(shredgen.Note.__eq__):
+            def note(_self, string='A', fret=1):
+                return shredgen.Note(string, fret)
+
+
+            with it('returns true when given an equal note'):
+                expect(self.note()).to(equal(self.note()))
+
+            with it('returns false when given a note with a different string'):
+                expect(self.note()).not_to(equal(self.note(string='x')))
+
+            with it('returns false when given a note with a different fret'):
+                expect(self.note()).not_to(equal(self.note(fret=-1)))
+
+        with description(shredgen.Note.__hash__):
+            def note(_self, string='A', fret=1):
+                return shredgen.Note(string, fret)
+
+
+            with it('returns the same hash for notes that have the same values'):
+                expect(hash(self.note())).to(equal(hash(self.note())))
+
+            with it('returns a different has for a note with a different string'):
+                expect(hash(self.note())).not_to(equal(hash(self.note(string='x'))))
+
+            with it('returns a different has for a note with a different fret'):
+                expect(hash(self.note())).not_to(equal(hash(self.note(fret=-1))))
+
+        with description(shredgen.Note.__str__):
+            with it('returns a user readable represention of the note'):
+                expect(str(shredgen.Note('A', 1))).to(equal('A1'))
+
+        with description(shredgen.Note.offset):
+            with it('returns an equal note when the offset is zero'):
+                expect(shredgen.Note('A', 1).offset(0)).to(equal(shredgen.Note('A', 1)))
+
+            with it('returns an equal note when wrapping and the offset is the number of notes in an octave'):
+                expect(shredgen.Note('A', 1).offset(shredgen._NOTES_IN_OCTAVE)).to(equal(shredgen.Note('A', 1)))
+
+            with it('returns a note whose fret is offset by the given amount'):
+                expect(shredgen.Note('A', 1).offset(5)).to(equal(shredgen.Note('A', 6)))
+
+            with it('can wrap when given an offset that would cause to fret to be greater than the number of notes in '
+                    'an octave'):
+                expect(shredgen.Note('A', 1).offset(shredgen._NOTES_IN_OCTAVE + 2)).to(equal(shredgen.Note('A', 3)))
+
+            with it('does not wrap when it is turned off'):
+                expect(shredgen.Note('A', 1).offset(shredgen._NOTES_IN_OCTAVE + 2, wrap=False)).to(
+                    equal(shredgen.Note('A', 15))
+                )
+
+    with description(shedgen.Scale):
+        with description(shredgen.Scale.__str__):
+            with it('returns a user readable represention of the scale'):
+                scale = shredgen.Scale(name='Test Scale', key='X', aliases=['ts', 'tscale'], notes=[
+                    shredgen.Note('A', 1),
+                    shredgen.Note('B', 2),
+                    shredgen.Note('C', 3)
+                ])
+                expect(str(scale)).to(equal('Test Scale {A1, B2, C3}'))
+
+    with description(shredgen.MajorPentatonicScale):
+        with description(shredgen.MajorPentatonicScale.__eq__):
+            def mps(_self, key='Test', notes=None):
+                if notes is None:
+                    notes = [shredgen.Note('A', 1), shredgen.Note('B', 2), shredgen.Note('C', 3)]
+
+                return shredgen.MajorPentatonicScale(key, notes)
+
+
+            with it('returns true when given two scales that have the same name and notes'):
+                expect(self.mps()).to(equal(self.mps()))
+
+            with it('returns false when given two scales with different keys'):
+                expect(self.mps()).not_to(equal(self.mps(key='x')))
+
+            with it('returns false when given two scales with different notes'):
+                notes = [
+                    shredgen.Note('a', 1),
+                    shredgen.Note('b', 2),
+                    shredgen.Note('c', 3)
+                ]
+                expect(self.mps()).not_to(equal(self.mps(notes=notes)))
+
+            with it('returns true when given two scales with the same notes in different orders notes'):
+                notes = [
+                    shredgen.Note('C', 3),
+                    shredgen.Note('A', 1),
+                    shredgen.Note('B', 2)
+                ]
+                expect(self.mps()).to(equal(self.mps(notes=notes)))
+
+        with description(shredgen.MajorPentatonicScale.from_other):
+            with it('returns a new scale with each note from the given scale at the given offset'):
+                note_a = shredgen.Note('a', 1)
+                note_b = shredgen.Note('b', 1)
+                note_c = shredgen.Note('c', 1)
+
+                note_a_off = shredgen.Note('a', 2)
+                note_b_off = shredgen.Note('b', 2)
+                note_c_off = shredgen.Note('c', 2)
+
+                when(note_a).offset(3, True).thenReturn(note_a_off)
+                when(note_b).offset(3, True).thenReturn(note_b_off)
+                when(note_c).offset(3, True).thenReturn(note_c_off)
+
+                scale_1 = shredgen.MajorPentatonicScale('a', [note_a, note_b, note_c])
+                scale_2 = shredgen.MajorPentatonicScale.from_other(scale_1, 3, 'b')
+
+                expect(scale_2.key).to(equal('b'))
+                expect(scale_2.notes).to(equal([note_a_off, note_b_off, note_c_off]))
+
+        with description(shredgen.MajorPentatonicScale._get_aliases_for_key):
+            with it('returns the aliases'):
+                expect(shredgen.MajorPentatonicScale._get_aliases_for_key('x')).to(equal([
+                    'x Major Pentatonic',
+                    'xMajorPentatonic',
+                    'x Maj Pen',
+                    'xMajPen',
+                ]))
+
+    with description(shredgen.ASCIITab):
+        with it('prints the notes in ASCII tab format'):
+            expect(str(shredgen.ASCIITab([
+                shredgen.Note('e', 13),
+                shredgen.Note('B', 4),
+                shredgen.Note('G', 6),
+                shredgen.Note('D', 2),
+                shredgen.Note('A', 11),
+                shredgen.Note('E', 0),
+            ]))).to(equal(
+                'e|-13-----------------\n'
+                'B|-----4--------------\n'
+                'G|--------6-----------\n'
+                'D|-----------2--------\n'
+                'A|--------------11----\n'
+                'E|------------------0-'
+            ))
+
+        with it('prints an empty ASCII tab when the given no notes'):
+            expect(str(shredgen.ASCIITab([]))).to(equal(
+                'e|--\n'
+                'B|--\n'
+                'G|--\n'
+                'D|--\n'
+                'A|--\n'
+                'E|--'
+            ))

@@ -4,7 +4,6 @@ shopt -s globstar
 set -u
 set -o pipefail
 
-
 source="${BASH_SOURCE[0]}"
 
 # resolve ${source} until the file is no longer a symlink

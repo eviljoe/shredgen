@@ -6,7 +6,6 @@ import os.path
 import random
 import sys
 
-
 _NOTES_IN_OCTAVE = 12
 _DEFAULT_LENGTH = 16
 _DEFAULT_TUNING = 'A'
@@ -244,7 +243,7 @@ def _print_err_and_usage(err):
     print('{}\nFor usage, execute: {} -h'.format(err, _basename()), file=sys.stderr)
 
 
-class Note:  # TODO unit test
+class Note:
     def __init__(self, string, fret):
         self.string = string
         self.fret = fret
@@ -274,7 +273,7 @@ class Note:  # TODO unit test
         return Note(self.string, offset_fret)
 
 
-class Scale:  # TODO unit test
+class Scale:
     def __init__(self, name, key, aliases, notes):
         self.name = name
         self.key = key
@@ -285,7 +284,7 @@ class Scale:  # TODO unit test
         return '{} {{{}}}'.format(self.name, ', '.join(str(n) for n in self.notes))
 
 
-class MajorPentatonicScale(Scale):  # TODO unit test
+class MajorPentatonicScale(Scale):
     def __init__(self, key, notes):
         super().__init__(
             name='{} Major Pentatonic'.format(key),
@@ -315,7 +314,7 @@ class MajorPentatonicScale(Scale):  # TODO unit test
         ]
 
 
-class ASCIITab:  # TODO unit test
+class ASCIITab:
     def __init__(self, notes):
         self.notes = notes
         self._strings = ['e', 'B', 'G', 'D', 'A', 'E']
