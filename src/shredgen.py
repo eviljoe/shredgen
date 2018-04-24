@@ -12,17 +12,17 @@ _DEFAULT_TUNING = 'A'
 
 _KEYS = [
     ['A'],
-    ['A#', 'Bb'],
+    ['A#', 'A sharp', 'ASharp', 'Bb', 'B Flat', 'BFlat'],
     ['B'],
     ['C'],
-    ['C#', 'Db'],
+    ['C#', 'C Sharp', 'CSharp', 'Db', 'D Flat', 'DFlat'],
     ['D'],
-    ['D#', 'Eb'],
+    ['D#', 'D Sharp', 'DSharp', 'Eb', 'E Flat', 'EFlat'],
     ['E'],
     ['F'],
-    ['F#', 'Gb'],
+    ['F#', 'F Sharp', 'FSharp', 'Gb', 'G Flat', 'GFlat'],
     ['G'],
-    ['G#', 'Ab']
+    ['G#', 'G Sharp', 'GSharp', 'Ab', 'A Flat', 'AFlat']
 ]
 
 _ERR_NO_SCALE_SPECIFIED = 2
@@ -76,7 +76,7 @@ def _update_default_opts(opts):
 
 def _perform_user_action(opts):
     if opts.all_scales:
-        _display_all_scales()
+        _display_all_scales(opts)
     elif opts.all_scale_names:
         _display_all_scale_names()
     elif opts.only_tune:
@@ -85,8 +85,29 @@ def _perform_user_action(opts):
         _shred(opts)
 
 
-def _display_all_scales():
+def _display_all_scales(opts):
+    if _get_key_offset(opts.tuning) == 0:
+        _display_all_scales_no_tuning()
+    else:
+        _display_all_scales_with_tuning(opts)
+
+
+def _display_all_scales_no_tuning():
     print('\n\n'.join(['{}\n{}'.format(scale.name, ASCIITab(scale.notes)) for scale in _get_all_scales()]))
+
+
+def _display_all_scales_with_tuning(opts):
+    scale_strs = []
+
+    for scale in _get_all_scales():
+        tuned_scale = _get_tuned_scale(scale, opts.tuning)
+
+        scale_str = 'Original Scale: {}\n{}'.format(scale.name, ASCIITab(scale.notes))
+        tuned_str = 'Tuned Scale: {}\n{}'.format(tuned_scale.name, ASCIITab(tuned_scale.notes))
+
+        scale_strs.append(_join_multiline_strings(scale_str, tuned_str))
+
+    print('\n\n'.join(scale_strs))
 
 
 def _display_all_scale_names():
@@ -159,7 +180,7 @@ def _get_scale_by_name(name):
 
 
 def _get_tuned_scale(scale, tuning_key):
-    offset = _get_key_offset('A', tuning_key)
+    offset = _get_key_offset(tuning_key)
     adjusted_scale = scale
 
     if offset != 0:
@@ -217,13 +238,13 @@ def _get_major_pentatonic_scales():
     ]
 
 
-def _get_key_offset(key1, key2):
-    return _get_key_num(key2) - _get_key_num(key1)
+def _get_key_offset(tuning_key, orig_key='A'):
+    return _get_key_num(tuning_key) - _get_key_num(orig_key)
 
 
 def _get_key_num(key):
-    ckey = str(key).capitalize()
-    key_num = next((i for i, names in enumerate(_KEYS) if ckey in names), None)
+    ckey = str(key).lower()
+    key_num = next((i for i, names in enumerate(_KEYS) if ckey in [name.lower() for name in names]), None)
 
     if key_num is None:
         raise ExitCodeError(
@@ -241,6 +262,32 @@ def _basename():
 
 def _print_err_and_usage(err):
     print('{}\nFor usage, execute: {} -h'.format(err, _basename()), file=sys.stderr)
+
+
+def _join_multiline_strings(str1, str2, sep='  '):  # TODO unit test
+    lines_1 = str(str1 or '').splitlines()
+    lines_2 = str(str2 or '').splitlines()
+    line_count_1 = len(lines_1)
+    line_count_2 = len(lines_2)
+    max_line_length_1 = len(max(lines_1, key=len) if lines_1 else '')
+    lines = []
+
+    for x in range(0, max(line_count_1, line_count_2)):
+        line = ''
+
+        if x < line_count_1:
+            line += lines_1[x].ljust(max_line_length_1, ' ')
+        else:
+            line += ''.ljust(max_line_length_1, ' ')
+
+        line += sep if sep else ''
+
+        if x < line_count_2:
+            line += lines_2[x]
+
+        lines.append(line)
+
+    return '\n'.join(lines)
 
 
 class Note:

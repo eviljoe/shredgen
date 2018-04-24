@@ -100,8 +100,9 @@ with description(shredgen) as self:
             when(shredgen)._shred(...)
 
         with it('displays all the scales when that flag is true'):
-            shredgen._perform_user_action(self.opts())
-            verify(shredgen)._display_all_scales()
+            opts = self.opts()
+            shredgen._perform_user_action(opts)
+            verify(shredgen)._display_all_scales(opts)
 
         with it('displays all scale names when that is the first true option'):
             shredgen._perform_user_action(self.opts(all_scales=False))
@@ -118,6 +119,22 @@ with description(shredgen) as self:
             verify(shredgen)._shred(opts)
 
     with description(shredgen._display_all_scales):
+        with before.each:
+            self.opts = mock({'tuning': 'A'})
+            when(shredgen)._display_all_scales_no_tuning()
+            when(shredgen)._display_all_scales_with_tuning(...)
+
+        with it('displays the scales without tuning when the key offset is zero'):
+            when(shredgen)._get_key_offset(...).thenReturn(0)
+            shredgen._display_all_scales(self.opts)
+            verify(shredgen)._display_all_scales_no_tuning()
+
+        with it('displays the scales with tuning when the key offset is not zero'):
+            when(shredgen)._get_key_offset(...).thenReturn(1)
+            shredgen._display_all_scales(self.opts)
+            verify(shredgen)._display_all_scales_with_tuning(self.opts)
+
+    with description(shredgen._display_all_scales_no_tuning):
         def scale(_self, name, notes):
             return mock({'name': name, 'notes': notes}, spec=shredgen.Scale)
 
@@ -139,7 +156,7 @@ with description(shredgen) as self:
             when(builtins).print(...)
 
         with it('displays the scale name & ASCII tab for each scale'):
-            shredgen._display_all_scales()
+            shredgen._display_all_scales_no_tuning()
             verify(builtins).print(
                 'Scale A\n'
                 'ascii tab a\n\n'
@@ -147,6 +164,44 @@ with description(shredgen) as self:
                 'ascii tab b\n\n'
                 'Scale C\n'
                 'ascii tab c'
+            )
+
+    with description(shredgen._display_all_scales_with_tuning):
+        with before.each:
+            scale_a = mock({'name': 'Scale A', 'notes': ['a']}, spec=shredgen.Scale)
+            scale_b = mock({'name': 'Scale B', 'notes': ['b']}, spec=shredgen.Scale)
+            scale_a_tuned = mock({'name': 'Scale A Tuned', 'notes': ['x']}, spec=shredgen.Scale)
+            scale_b_tuned = mock({'name': 'Scale B Tuned', 'notes': ['y']}, spec=shredgen.Scale)
+
+            atab_a = mock({'__str__': lambda: 'ascii tab a'}, spec=shredgen.ASCIITab)
+            atab_b = mock({'__str__': lambda: 'ascii tab b'}, spec=shredgen.ASCIITab)
+            atab_a_tuned = mock({'__str__': lambda: 'ascii tab a tuned'}, spec=shredgen.ASCIITab)
+            atab_b_tuned = mock({'__str__': lambda: 'ascii tab b tuned'}, spec=shredgen.ASCIITab)
+
+            when(shredgen)._get_all_scales().thenReturn([scale_a, scale_b])
+            when(shredgen)._get_tuned_scale(scale_a, 'C').thenReturn(scale_a_tuned)
+            when(shredgen)._get_tuned_scale(scale_b, 'C').thenReturn(scale_b_tuned)
+            when(shredgen).ASCIITab(scale_a.notes).thenReturn(atab_a)
+            when(shredgen).ASCIITab(scale_b.notes).thenReturn(atab_b)
+            when(shredgen).ASCIITab(scale_a_tuned.notes).thenReturn(atab_a_tuned)
+            when(shredgen).ASCIITab(scale_b_tuned.notes).thenReturn(atab_b_tuned)
+
+            when(shredgen)._join_multiline_strings(
+                'Original Scale: Scale A\nascii tab a',
+                'Tuned Scale: Scale A Tuned\nascii tab a tuned'
+            ).thenReturn('joined Scale A & Scale A Tuned')
+            when(shredgen)._join_multiline_strings(
+                'Original Scale: Scale B\nascii tab b',
+                'Tuned Scale: Scale B Tuned\nascii tab b tuned'
+            ).thenReturn('joined Scale B & Scale B Tuned')
+
+            when(builtins).print(...)
+
+        with it('displays the original scale & tuned scale for each scale'):
+            shredgen._display_all_scales_with_tuning(mock({'tuning': 'C'}))
+            verify(builtins).print(
+                'joined Scale A & Scale A Tuned\n\n'
+                'joined Scale B & Scale B Tuned'
             )
 
     with description(shredgen._display_tuning):
@@ -398,7 +453,12 @@ with description(shredgen) as self:
         with it('returns key #2 number - key #1 number'):
             when(shredgen)._get_key_num('foo').thenReturn(5)
             when(shredgen)._get_key_num('bar').thenReturn(7)
-            expect(shredgen._get_key_offset('foo', 'bar')).to(equal(2))
+            expect(shredgen._get_key_offset(orig_key='foo', tuning_key='bar')).to(equal(2))
+
+        with it('uses the key of "A" when given no original key'):
+            when(shredgen)._get_key_num('A').thenReturn(5)
+            when(shredgen)._get_key_num('bar').thenReturn(7)
+            expect(shredgen._get_key_offset(tuning_key='bar')).to(equal(2))
 
     with description(shredgen._get_key_num):
         with before.each:
@@ -441,6 +501,47 @@ with description(shredgen) as self:
 
         with it('returns the the basename'):
             expect(shredgen._basename()).to(equal('basename'))
+
+    with description(shredgen._join_multiline_strings):
+        with before.each:
+            self.str_a = 'abc\ndefgh\nij'
+            self.str_b = '1234\n567\n89'
+            self.str_c = 'foo\nbar'
+
+        with it('displays the strings with their lines side by side'):
+            expect(shredgen._join_multiline_strings(self.str_a, self.str_b, sep=' | ')).to(equal(
+                'abc   | 1234\n'
+                'defgh | 567\n'
+                'ij    | 89'
+            ))
+
+        with it('keeps the strings aligned when the first string has more lines than the second string'):
+            expect(shredgen._join_multiline_strings(self.str_a, self.str_c, sep=' | ')).to(equal(
+                'abc   | foo\n'
+                'defgh | bar\n'
+                'ij    | '
+            ))
+
+        with it('keeps the strings aligned when the first string has less lines than the second string'):
+            expect(shredgen._join_multiline_strings(self.str_c, self.str_a, sep=' | ')).to(equal(
+                'foo | abc\n'
+                'bar | defgh\n'
+                '    | ij'
+            ))
+
+        with it('displays the first string as empty when it is None'):
+            expect(shredgen._join_multiline_strings(None, self.str_a, sep=' | ')).to(equal(
+                ' | abc\n'
+                ' | defgh\n'
+                ' | ij'
+            ))
+
+        with it('displays the second string as empty when it is None'):
+            expect(shredgen._join_multiline_strings(self.str_a, None, sep=' | ')).to(equal(
+                'abc   | \n'
+                'defgh | \n'
+                'ij    | '
+            ))
 
     with description(shredgen.Note):
         with description(shredgen.Note.__eq__):
@@ -494,7 +595,7 @@ with description(shredgen) as self:
                     equal(shredgen.Note('A', 15))
                 )
 
-    with description(shedgen.Scale):
+    with description(shredgen.Scale):
         with description(shredgen.Scale.__str__):
             with it('returns a user readable represention of the scale'):
                 scale = shredgen.Scale(name='Test Scale', key='X', aliases=['ts', 'tscale'], notes=[
